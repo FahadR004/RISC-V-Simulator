@@ -11,7 +11,7 @@
 #define R_TYPE_LEN 5
 #define I_TYPE_LEN 4
 #define S_TYPE_LEN 1
-#define B_TYPE_LEN 1
+#define B_TYPE_LEN 2
 #define P_TYPE_LEN 1
 
 struct CPU {

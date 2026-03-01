@@ -1,6 +1,5 @@
 li t0, 5
-li t1, 5
-beq t2, t1, equal
-li t2, 40
-equal:
-addi a7, 10
+li t1, 7
+add t2, t0, t1
+sw t2, 8(t1)
+lw t2, 8(t1)

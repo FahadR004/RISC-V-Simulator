@@ -59,6 +59,7 @@ char* s_type_instr[S_TYPE_LEN] = {
 
 char* b_type_instr[B_TYPE_LEN] = {
     "beq", 
+    "bne"
 };
 
 char* pseudo_instr[P_TYPE_LEN] = {
@@ -86,6 +87,10 @@ void execute(struct CPU *cpu, Instruction instr) {
    } else if (!strcmp(instr.opcode, "lw")) {
         // We are doing little endian
         uint32_t addr = cpu->regs[instr.rs1] + instr.imm; // Calculate address
+        if (addr + 3 >= MEM_SIZE) {
+            printf("ERROR: Memory access out of bounds at 0x%x\n", addr);
+            return;
+        }
         cpu->regs[instr.rd] = cpu->data_mem[addr] // Byte 0
                 | (cpu->data_mem[addr+1] << 8)    // Byte 1
                 | (cpu->data_mem[addr+2] << 16)   // Byte 2
@@ -99,6 +104,10 @@ void execute(struct CPU *cpu, Instruction instr) {
         // Then, add all
    } else if (!strcmp(instr.opcode, "sw")) {
         uint32_t addr = cpu->regs[instr.rs1] + instr.imm; // Calculate address
+        if (addr + 3 >= MEM_SIZE) {
+            printf("ERROR: Memory access out of bounds at 0x%x\n", addr);
+            return;
+        }
         // 0xFF -> 0000 0000  0000 0000  0000 0000  1111 1111
         cpu->data_mem[addr]   =  cpu->regs[instr.rs2]        & 0xFF;
         cpu->data_mem[addr+1] = (cpu->regs[instr.rs2] >> 8)  & 0xFF; // Taking the value and shifting it so that second byte is now under FF
@@ -116,9 +125,12 @@ void execute(struct CPU *cpu, Instruction instr) {
             cpu->pc = instr.target_addr; // Label address from get_label_address() is in imm
         }
    }
+   cpu->regs[0] = 0;
 }
 
 void cpu_init(struct CPU *cpu) {
     printf("Starting CPU...\n");
+    memset(cpu, 0, sizeof(struct CPU));
     cpu->pc = BASE_PC;
+    cpu->last_mem_addr = -1;
 }

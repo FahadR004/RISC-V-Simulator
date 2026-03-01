@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include "utils.h"
 #include "cpu.h"
 
@@ -9,47 +10,38 @@ void print_array(char **arr, int count, const char *label) {
 }
 
 void print_execution_step(Instruction instr, struct CPU *cpu) {
-    // Reconstruct instruction string based on opcode
-    char instr_str[64];
 
-    if (instr.rs2 != -1 && instr.imm == 0) {
-        // R-type: add t0, t1, t2
-        snprintf(instr_str, sizeof(instr_str), "%s %s, %s, %s",
-            instr.opcode,
-            reg_names[instr.rd],
-            reg_names[instr.rs1],
-            reg_names[instr.rs2]);
-    } else if (instr.rs2 == -1 && instr.rd != -1 && instr.rs1 == 0) {
-        // Pseudo: li t0, 5
-        snprintf(instr_str, sizeof(instr_str), "%s %s, %d",
-            instr.opcode,
-            reg_names[instr.rd],
-            instr.imm);
+    // Print instruction
+    printf("> %s ", instr.opcode);
+
+   if (!strcmp(instr.opcode, "beq") || !strcmp(instr.opcode, "bne")) {
+        printf("%s, %s, 0x%x", reg_names[instr.rs1], reg_names[instr.rs2], instr.target_addr);
+    } else if (!strcmp(instr.opcode, "sw")) {
+        printf("%s, %d(%s)", reg_names[instr.rs2], instr.imm, reg_names[instr.rs1]);
+    } else if (!strcmp(instr.opcode, "lw")) {
+        printf("%s, %d(%s)", reg_names[instr.rd], instr.imm, reg_names[instr.rs1]);
+    } else if (!strcmp(instr.opcode, "li")) {
+        printf("%s, %d", reg_names[instr.rd], instr.imm);
     } else if (instr.rs2 == -1) {
-        // I-type: addi t0, t1, 5
-        snprintf(instr_str, sizeof(instr_str), "%s %s, %s, %d",
-            instr.opcode,
-            reg_names[instr.rd],
-            reg_names[instr.rs1],
-            instr.imm);
+        // I-type
+        printf("%s, %s, %d", reg_names[instr.rd], reg_names[instr.rs1], instr.imm);
     } else {
-        // B-type: beq t0, t1, label
-        snprintf(instr_str, sizeof(instr_str), "%s %s, %s, 0x%x",
-            instr.opcode,
-            reg_names[instr.rs1],
-            reg_names[instr.rs2],
-            instr.imm);
+        // R-type
+        printf("%s, %s, %s", reg_names[instr.rd], reg_names[instr.rs1], reg_names[instr.rs2]);
     }
 
-    // Print instruction and PC
-    printf("> %s  PC: 0x%08x\n", instr_str, cpu->pc);
+    // Print PC
+    printf("  PC: 0x%08x\n", cpu->pc);
 
-    // Print registers — only non zero ones plus always print x0
+    // Print non-zero registers
     printf("Registers: ");
-    for (int i = 0; i < REG_NUM; i++) {
-        if (cpu->regs[i] != 0 || i == 0) {
-            printf("x%d: %d (%s)  ", i, cpu->regs[i], reg_names[i]);
-        }
+   for (int i = 0; i < REG_NUM; i++) {
+        printf("x%d(%s): %d  ", i, reg_names[i], cpu->regs[i]);
     }
+    if (cpu->last_mem_addr != (uint32_t)-1) {
+        printf("\nMemory[%d] = %d\n", cpu->last_mem_addr, cpu->last_mem_val);
+    } 
+
+    cpu->last_mem_addr = -1; // Reset
     printf("\n\n");
 }
