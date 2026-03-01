@@ -78,7 +78,6 @@ Instruction parse(char **tokens, char **label_arr, int * addr_arr, int label_cou
         };
     }
     if (found) return instr;
-
      // I-Type: addi, andi, ori, lw
     // Format: opcode rd, rs1, imm
     for (int i = 0; i < I_TYPE_LEN; i++) {
@@ -114,7 +113,6 @@ Instruction parse(char **tokens, char **label_arr, int * addr_arr, int label_cou
         }
     }
     if (found) return instr;
-
     // B-Type: beq
     // Format: beq rs1, rs2, label/imm
     for (int i = 0; i < B_TYPE_LEN; i++) {
@@ -130,18 +128,32 @@ Instruction parse(char **tokens, char **label_arr, int * addr_arr, int label_cou
     }
     if (found) return instr;
 
-    // Pseudo: li (load immediate)
-    // Format: li rd, imm
+    // Pseudo: li (load immediate), mv, nop, j
     // Expands to addi rd, x0, imm
-    for (int i = 0; i < P_TYPE_LEN; i++) {
-        if (!strcmp(tokens[0], pseudo_instr[i])) {
-            instr.rd  = get_register_number(tokens[1]);
-            instr.rs1 = 0;  // x0
-            instr.rs2 = -1;
-            instr.imm = atoi(tokens[2]);
-            found = 1;
-            break;
-        }
+    if (!strcmp(tokens[0], "li")) {
+        instr.rd  = get_register_number(tokens[1]);
+        instr.rs1 = 0;
+        instr.rs2 = -1;
+        instr.imm = atoi(tokens[2]);
+        found = 1;
+    } else if (!strcmp(tokens[0], "mv")) {
+        instr.rd  = get_register_number(tokens[1]);
+        instr.rs1 = get_register_number(tokens[2]);
+        instr.rs2 = -1;
+        instr.imm = 0;
+        found = 1;
+    } else if (!strcmp(tokens[0], "nop")) {
+        instr.rd  = 0;
+        instr.rs1 = 0;
+        instr.rs2 = -1;
+        instr.imm = 0;
+        found = 1;
+    } else if (!strcmp(tokens[0], "j")) {
+        instr.rs1 = 0;
+        instr.rs2 = -1;
+        instr.rd  = -1;
+        instr.target_addr = get_label_address(tokens[1], label_arr, addr_arr, label_count);
+        found = 1;
     }
     if (found) return instr;
    

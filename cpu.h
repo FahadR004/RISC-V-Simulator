@@ -8,11 +8,11 @@
 #define MEM_SIZE 4096
 #define BASE_PC 0x00400000  
 
-#define R_TYPE_LEN 5
-#define I_TYPE_LEN 4
+#define R_TYPE_LEN 10
+#define I_TYPE_LEN 10
 #define S_TYPE_LEN 1
-#define B_TYPE_LEN 2
-#define P_TYPE_LEN 1
+#define B_TYPE_LEN 4
+#define P_TYPE_LEN 4
 
 struct CPU {
    int32_t regs[REG_NUM];

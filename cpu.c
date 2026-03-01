@@ -43,14 +43,25 @@ char* r_type_instr[R_TYPE_LEN] = {
     "sub",
     "and",
     "or",
-    "xor"
+    "xor",
+    "sll",   // shifts
+    "srl",     
+    "sra",   
+    "slt",    
+    "sltu" // unsigned
 };
 
 char* i_type_instr[I_TYPE_LEN] = {
-    "addi", 
+    "addi",
     "andi",
     "ori",
-    "lw"
+    "lw",
+    "xori",  
+    "slti",  
+    "sltiu", 
+    "slli",  
+    "srli",
+    "srai"
 };
 
 char* s_type_instr[S_TYPE_LEN] = {
@@ -59,42 +70,88 @@ char* s_type_instr[S_TYPE_LEN] = {
 
 char* b_type_instr[B_TYPE_LEN] = {
     "beq", 
-    "bne"
+    "bne",
+    "blt",
+    "bge"
 };
 
 char* pseudo_instr[P_TYPE_LEN] = {
     "li", 
+    "mv",
+    "nop",
+    "j"
 };
 
 void execute(struct CPU *cpu, Instruction instr) {
     cpu->pc += 4;
    if (!strcmp(instr.opcode, "addi") || !strcmp(instr.opcode, "li")) {
         cpu->regs[instr.rd] = cpu->regs[instr.rs1] + instr.imm;
-   } else if (!strcmp(instr.opcode, "add")) {
+   } 
+    else if (!strcmp(instr.opcode, "add")) {
         cpu->regs[instr.rd] = cpu->regs[instr.rs1] + cpu->regs[instr.rs2];
-    } else if (!strcmp(instr.opcode, "sub")) {
+    } 
+    else if (!strcmp(instr.opcode, "sub")) {
         cpu->regs[instr.rd] = cpu->regs[instr.rs1] - cpu->regs[instr.rs2];
-   } else if (!strcmp(instr.opcode, "and")) {
+   } 
+    else if (!strcmp(instr.opcode, "and")) {
         cpu->regs[instr.rd] = cpu->regs[instr.rs1] & cpu->regs[instr.rs2];
-   } else if (!strcmp(instr.opcode, "or")) {
+   } 
+    else if (!strcmp(instr.opcode, "or")) {
         cpu->regs[instr.rd] = cpu->regs[instr.rs1] | cpu->regs[instr.rs2];
-   } else if (!strcmp(instr.opcode, "xor")) {
+   } 
+    else if (!strcmp(instr.opcode, "xor")) {
         cpu->regs[instr.rd] = cpu->regs[instr.rs1] ^ cpu->regs[instr.rs2];
-   } else if (!strcmp(instr.opcode, "andi")) {
+   } 
+    else if (!strcmp(instr.opcode, "sll")) {
+        cpu->regs[instr.rd] = cpu->regs[instr.rs1] << (cpu->regs[instr.rs2] & 0x1F);
+    } 
+    else if (!strcmp(instr.opcode, "srl")) {
+        cpu->regs[instr.rd] = (uint32_t)cpu->regs[instr.rs1] >> (cpu->regs[instr.rs2] & 0x1F);
+    } 
+    else if (!strcmp(instr.opcode, "sra")) {
+        cpu->regs[instr.rd] = cpu->regs[instr.rs1] >> (cpu->regs[instr.rs2] & 0x1F);
+    } 
+    else if (!strcmp(instr.opcode, "slt")) {
+        cpu->regs[instr.rd] = cpu->regs[instr.rs1] < cpu->regs[instr.rs2] ? 1 : 0;
+    } 
+    else if (!strcmp(instr.opcode, "sltu")) {
+        cpu->regs[instr.rd] = (uint32_t)cpu->regs[instr.rs1] < (uint32_t)cpu->regs[instr.rs2] ? 1 : 0;
+    } 
+    else if (!strcmp(instr.opcode, "andi")) {
         cpu->regs[instr.rd] = cpu->regs[instr.rs1] & instr.imm;
-   } else if (!strcmp(instr.opcode, "ori")) {
+   } 
+    else if (!strcmp(instr.opcode, "ori")) {
         cpu->regs[instr.rd] = cpu->regs[instr.rs1] | instr.imm;
-   } else if (!strcmp(instr.opcode, "lw")) {
+    }  
+    else if (!strcmp(instr.opcode, "xori")) {
+        cpu->regs[instr.rd] = cpu->regs[instr.rs1] ^ instr.imm;
+    } 
+    else if (!strcmp(instr.opcode, "slti")) {
+        cpu->regs[instr.rd] = cpu->regs[instr.rs1] < instr.imm ? 1 : 0;
+    } 
+    else if (!strcmp(instr.opcode, "sltiu")) {
+        cpu->regs[instr.rd] = (uint32_t)cpu->regs[instr.rs1] < (uint32_t)instr.imm ? 1 : 0;
+    } 
+    else if (!strcmp(instr.opcode, "slli")) {
+        cpu->regs[instr.rd] = cpu->regs[instr.rs1] << (instr.imm & 0x1F);
+    } 
+    else if (!strcmp(instr.opcode, "srai")) {
+        cpu->regs[instr.rd] = cpu->regs[instr.rs1] >> (instr.imm & 0x1F);
+    }
+    else if (!strcmp(instr.opcode, "srli")) {
+        cpu->regs[instr.rd] = (uint32_t)cpu->regs[instr.rs1] >> (instr.imm & 0x1F); 
+    } 
+    else if (!strcmp(instr.opcode, "lw")) {
         // We are doing little endian
         uint32_t addr = cpu->regs[instr.rs1] + instr.imm; // Calculate address
         if (addr + 3 >= MEM_SIZE) {
             printf("ERROR: Memory access out of bounds at 0x%x\n", addr);
             return;
         }
-        cpu->regs[instr.rd] = cpu->data_mem[addr] // Byte 0
-                | (cpu->data_mem[addr+1] << 8)    // Byte 1
-                | (cpu->data_mem[addr+2] << 16)   // Byte 2
-                | (cpu->data_mem[addr+3] << 24);  // Byte 3
+        cpu->regs[instr.rd] = (uint8_t)cpu->data_mem[addr]
+                | ((uint8_t)cpu->data_mem[addr+1] << 8)
+                | ((uint8_t)cpu->data_mem[addr+2] << 16)
+                | ((uint8_t)cpu->data_mem[addr+3] << 24);
         // So, if data is: 0xAABBCCDD (Byte 3,2,1,0)
         // And I get address: 40
         // Then, starting at 40, I get DD
@@ -124,9 +181,26 @@ void execute(struct CPU *cpu, Instruction instr) {
         if (cpu->regs[instr.rs1] != cpu->regs[instr.rs2]) {
             cpu->pc = instr.target_addr; // Label address from get_label_address() is in imm
         }
-   }
-   cpu->regs[0] = 0;
-}
+   }  
+   else if (!strcmp(instr.opcode, "blt")) {
+        if (cpu->regs[instr.rs1] < cpu->regs[instr.rs2]) {
+            cpu->pc = instr.target_addr;
+        }
+    } else if (!strcmp(instr.opcode, "bge")) {
+        if (cpu->regs[instr.rs1] >= cpu->regs[instr.rs2]){
+            cpu->pc = instr.target_addr;
+        }
+    } else if (!strcmp(instr.opcode, "mv")) {
+        cpu->regs[instr.rd] = cpu->regs[instr.rs1];
+    } else if (!strcmp(instr.opcode, "nop")) {
+        // do nothing, pc already advanced
+    } else if (!strcmp(instr.opcode, "j")) {
+        cpu->pc = instr.target_addr;
+    } else {
+        printf("ERROR: Unknown instruction '%s' at PC 0x%08x\n", instr.opcode, cpu->pc - 4);
+    }
+    cpu->regs[0] = 0;
+    }
 
 void cpu_init(struct CPU *cpu) {
     printf("Starting CPU...\n");

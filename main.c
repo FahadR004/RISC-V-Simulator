@@ -33,10 +33,9 @@ int main() {
 
     // Assembler
     printf("\n");
-    printf("PARSING...\n");
+    printf("\nPARSING...\n");
     rewind(fptr); // Resetting file pointer to the start of the file
-
-    char *token_arr[8];
+    char *token_arr[4];
     Instruction instructions[256];
     int instr_count = 0;
     while (fgets(line, sizeof(line), fptr)) {
@@ -45,20 +44,10 @@ int main() {
         if (line[0] == '\0' || line[0] == '#') continue;
         
         tokenize(line, token_arr);
-        
         instructions[instr_count] = parse(token_arr, label_arr, addr_arr, label_count); // Get instruction structure from tokens
         instr_count++;
     }
-    // for (int i = 0; i < instr_count; i++) {
-    //     printf("INSTRUCTION %d: %s\n", i, instructions[i].opcode);
-    // }
-    // for (int i = 0; i < label_count; i++) {
-    //     printf("%s[%d]: %s\n", "LABEL", i, label_arr[i]);
-    // }
-    // for (int i = 0; i < label_count; i++) {
-    //     printf("%s[%d]: %x\n", "ADDRESS", i, addr_arr[i]);
-    // }
-    
+    printf("Parsing completed. Total instructions: %d\n\n", instr_count);
    
     int i = 0;
     while (i < instr_count) {
