@@ -6,7 +6,7 @@
 
 #define REG_NUM 32 // Or register numbers
 #define MEM_SIZE 4096
-#define PC 0x00400000  
+#define BASE_PC 0x00400000  
 
 #define R_TYPE_LEN 5
 #define I_TYPE_LEN 4
@@ -17,18 +17,24 @@
 struct CPU {
    int32_t regs[REG_NUM];
    uint32_t pc;
-   int8_t mem[MEM_SIZE];
+   int8_t text_mem[MEM_SIZE];
+   int8_t data_mem[MEM_SIZE];
+   uint32_t last_mem_addr;
+   int32_t last_mem_val;
 };
 
 typedef struct {
    char opcode[16];
-   int  rd;
-   int  rs1;
-   int  rs2;
-   int  imm;
+   int32_t  rd;
+   int32_t  rs1;
+   int32_t  rs2;
+   int32_t  imm;
+   uint32_t target_addr;
 } Instruction;
 
 void cpu_init(struct CPU *cpu);
+
+void execute(struct CPU *cpu, Instruction instr);
 
 extern char *reg_names[REG_NUM];
 

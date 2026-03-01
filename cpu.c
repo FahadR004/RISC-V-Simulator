@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "cpu.h"
 
 char *reg_names[REG_NUM] = { // * because we have whole words not chars
@@ -64,8 +65,60 @@ char* pseudo_instr[P_TYPE_LEN] = {
     "li", 
 };
 
+void execute(struct CPU *cpu, Instruction instr) {
+    cpu->pc += 4;
+   if (!strcmp(instr.opcode, "addi") || !strcmp(instr.opcode, "li")) {
+        cpu->regs[instr.rd] = cpu->regs[instr.rs1] + instr.imm;
+   } else if (!strcmp(instr.opcode, "add")) {
+        cpu->regs[instr.rd] = cpu->regs[instr.rs1] + cpu->regs[instr.rs2];
+    } else if (!strcmp(instr.opcode, "sub")) {
+        cpu->regs[instr.rd] = cpu->regs[instr.rs1] - cpu->regs[instr.rs2];
+   } else if (!strcmp(instr.opcode, "and")) {
+        cpu->regs[instr.rd] = cpu->regs[instr.rs1] & cpu->regs[instr.rs2];
+   } else if (!strcmp(instr.opcode, "or")) {
+        cpu->regs[instr.rd] = cpu->regs[instr.rs1] | cpu->regs[instr.rs2];
+   } else if (!strcmp(instr.opcode, "xor")) {
+        cpu->regs[instr.rd] = cpu->regs[instr.rs1] ^ cpu->regs[instr.rs2];
+   } else if (!strcmp(instr.opcode, "andi")) {
+        cpu->regs[instr.rd] = cpu->regs[instr.rs1] & instr.imm;
+   } else if (!strcmp(instr.opcode, "ori")) {
+        cpu->regs[instr.rd] = cpu->regs[instr.rs1] | instr.imm;
+   } else if (!strcmp(instr.opcode, "lw")) {
+        // We are doing little endian
+        uint32_t addr = cpu->regs[instr.rs1] + instr.imm; // Calculate address
+        cpu->regs[instr.rd] = cpu->data_mem[addr] // Byte 0
+                | (cpu->data_mem[addr+1] << 8)    // Byte 1
+                | (cpu->data_mem[addr+2] << 16)   // Byte 2
+                | (cpu->data_mem[addr+3] << 24);  // Byte 3
+        // So, if data is: 0xAABBCCDD (Byte 3,2,1,0)
+        // And I get address: 40
+        // Then, starting at 40, I get DD
+        // Then, I do 40 + 1, that gives me CC and then I shift it and make it CC00
+        // Then, I do 40 + 2, that gives me BB and then I shift it and make it BB0000
+        // Then, I do 40 + 3, that gives me AA and then I shift it and make it AA000000
+        // Then, add all
+   } else if (!strcmp(instr.opcode, "sw")) {
+        uint32_t addr = cpu->regs[instr.rs1] + instr.imm; // Calculate address
+        // 0xFF -> 0000 0000  0000 0000  0000 0000  1111 1111
+        cpu->data_mem[addr]   =  cpu->regs[instr.rs2]        & 0xFF;
+        cpu->data_mem[addr+1] = (cpu->regs[instr.rs2] >> 8)  & 0xFF; // Taking the value and shifting it so that second byte is now under FF
+        cpu->data_mem[addr+2] = (cpu->regs[instr.rs2] >> 16) & 0xFF; // Taking the value and shifting it so that third byte is now under FF
+        cpu->data_mem[addr+3] = (cpu->regs[instr.rs2] >> 24) & 0xFF; // Taking the value and shifting it so that fourth byte is now under FF
+        cpu->last_mem_addr = addr;
+        cpu->last_mem_val  = cpu->regs[instr.rs2];
+   } else if (!strcmp(instr.opcode, "beq")) {
+        // beq rs1, rs2, label/imm
+        if (cpu->regs[instr.rs1] == cpu->regs[instr.rs2]) {
+            cpu->pc = instr.target_addr; // Label address from get_label_address() is in imm
+        }
+   } else if (!strcmp(instr.opcode, "bne")) {
+        if (cpu->regs[instr.rs1] != cpu->regs[instr.rs2]) {
+            cpu->pc = instr.target_addr; // Label address from get_label_address() is in imm
+        }
+   }
+}
 
 void cpu_init(struct CPU *cpu) {
     printf("Starting CPU...\n");
-    cpu->pc = PC;
+    cpu->pc = BASE_PC;
 }
