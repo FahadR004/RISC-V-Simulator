@@ -53,26 +53,23 @@ add t2, t0, t1
 
 ### Option B — Visual Debugger (Browser UI)
 
-**1. Compile:**
+**1. Compile and run with the JSON flag:**
 ```bash
 make
+./risc_v_sim -json
 ```
 
-**2. Start the Python server:**
+**2. Start a local server in the project folder:**
 ```bash
-python3 server.py
+python3 -m http.server 8000
 ```
 
 **3. Open your browser and go to:**
 ```
-http://localhost:8000
+http://localhost:8000/visualizer.html
 ```
 
-**4. Write assembly in the editor and click Run.**
-
-No copy-pasting. No manual steps. The visualizer updates instantly.
-
-> Requires Python 3 — no additional packages needed.
+**4. To run a new program, edit `program.asm`, run `./risc_v_sim -json` again, and refresh the page.**
 
 ---
 
@@ -155,8 +152,7 @@ riscv-sim/
 ├── utils.c          — print utilities, JSON output
 ├── utils.h          — utility function declarations
 ├── Makefile         — build configuration
-├── server.py        — lightweight Python server for browser UI
-├── visualizer.html  — browser-based step-through debugger
+├── simulator.html  — browser-based step-through debugger
 └── program.asm      — assembly input for CLI mode
 ```
 
@@ -170,8 +166,7 @@ The simulator follows a classic fetch-decode-execute pipeline:
 2. **Array-based execution** — all instructions are loaded into an array and executed using the PC as an index, enabling correct branch and jump behavior
 3. **Separate memory spaces** — instruction memory and data memory are kept separate, with data memory byte-addressed and little-endian
 4. **Step-by-step output** — after every instruction, the full register file and any memory changes are displayed
-5. **JSON export** — running with `-json` flag outputs execution trace to `output.json`, consumed by the visual debugger
-6. **Python server** — `server.py` serves the HTML visualizer and proxies assembly code to the simulator, returning JSON results to the browser
+5. **JSON export** — running with `-json` flag outputs the execution trace to `output.json`. Run `./risc_v_sim -json` to generate it, then serve it with `python3 -m http.server 8000` and open `http://localhost:8000/visualizer.html` — the page fetches `output.json` automatically and loads the visualizer.
 
 ---
 
