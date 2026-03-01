@@ -48,7 +48,8 @@ int main() {
         instr_count++;
     }
     printf("Parsing completed. Total instructions: %d\n\n", instr_count);
-   
+    printf("Initial PC set to 0x%08x\n", cpu.pc);
+    printf("Starting execution...\n\n");
     int i = 0;
     while (i < instr_count) {
         execute(&cpu, instructions[i]);

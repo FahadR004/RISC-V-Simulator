@@ -66,7 +66,7 @@ Instruction parse(char **tokens, char **label_arr, int * addr_arr, int label_cou
     Instruction instr = { 0 };
     strcpy(instr.opcode, tokens[0]);
     int found = 0;
-    // R-Type Check
+    // R-Type 
     for (int i = 0; i < R_TYPE_LEN; i++) {
         if (!strcmp(tokens[0], r_type_instr[i])){ // returns 0 if identical
             instr.rd = get_register_number(tokens[1]);
@@ -78,8 +78,7 @@ Instruction parse(char **tokens, char **label_arr, int * addr_arr, int label_cou
         };
     }
     if (found) return instr;
-     // I-Type: addi, andi, ori, lw
-    // Format: opcode rd, rs1, imm
+     // I-Type
     for (int i = 0; i < I_TYPE_LEN; i++) {
         if (!strcmp(tokens[0], i_type_instr[i])) {
             if (!strcmp(tokens[0], "lw")) {
@@ -101,7 +100,6 @@ Instruction parse(char **tokens, char **label_arr, int * addr_arr, int label_cou
     if (found) return instr;
 
     // S-Type: sw
-    // Format: sw rs2, imm(rs1)
     for (int i = 0; i < S_TYPE_LEN; i++) {
         if (!strcmp(tokens[0], s_type_instr[i])) {
             instr.rs2 = get_register_number(tokens[1]);
@@ -113,8 +111,7 @@ Instruction parse(char **tokens, char **label_arr, int * addr_arr, int label_cou
         }
     }
     if (found) return instr;
-    // B-Type: beq
-    // Format: beq rs1, rs2, label/imm
+    // B-Type
     for (int i = 0; i < B_TYPE_LEN; i++) {
         if (!strcmp(tokens[0], b_type_instr[i])) {
             instr.rs1 = get_register_number(tokens[1]);
@@ -128,8 +125,7 @@ Instruction parse(char **tokens, char **label_arr, int * addr_arr, int label_cou
     }
     if (found) return instr;
 
-    // Pseudo: li (load immediate), mv, nop, j
-    // Expands to addi rd, x0, imm
+    // Pseudo
     if (!strcmp(tokens[0], "li")) {
         instr.rd  = get_register_number(tokens[1]);
         instr.rs1 = 0;
