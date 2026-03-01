@@ -57,6 +57,10 @@ int main() {
     }
 
     printf("Execution completed.\n");
+    for (int i = 0; i < REG_NUM; i++) {
+        if (cpu.regs[i] != 0)
+            printf("Result: %s (x%d) = %d\n", reg_names[i], i, cpu.regs[i]);
+    }
 
     for (int i = 0; i < label_count; i++) { // strdup uses malloc so we need to free that memory
         free(label_arr[i]);
