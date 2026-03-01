@@ -21,6 +21,7 @@ struct CPU {
    int8_t data_mem[MEM_SIZE];
    uint32_t last_mem_addr;
    int32_t last_mem_val;
+   int json_mode;
 };
 
 typedef struct {

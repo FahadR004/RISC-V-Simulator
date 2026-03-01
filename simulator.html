@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RISC-V Simulator</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: #0d1117;
+            color: #c9d1d9;
+            font-family: 'Courier New', monospace;
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        h1 {
+            color: #58a6ff;
+            font-size: 1.6em;
+            margin-bottom: 4px;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #8b949e;
+            font-size: 0.85em;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+        }
+
+        /* LEFT PANEL */
+        .left-panel { display: flex; flex-direction: column; gap: 16px; }
+
+        .card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .card-title {
+            color: #8b949e;
+            font-size: 0.75em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        .instruction-display {
+            color: #79c0ff;
+            font-size: 1.1em;
+            font-weight: bold;
+            padding: 10px;
+            background: #0d1117;
+            border-radius: 4px;
+            border-left: 3px solid #58a6ff;
+        }
+
+        .pc-display {
+            color: #d2a8ff;
+            font-size: 1em;
+            padding: 8px 10px;
+            background: #0d1117;
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+
+        /* CONTROLS */
+        .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+        button {
+            background: #21262d;
+            color: #c9d1d9;
+            border: 1px solid #30363d;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: monospace;
+            font-size: 0.9em;
+            transition: all 0.15s;
+        }
+
+        button:hover { background: #30363d; border-color: #58a6ff; color: #58a6ff; }
+        button:disabled { opacity: 0.4; cursor: not-allowed; }
+        button.primary { background: #1f6feb; border-color: #1f6feb; color: white; }
+        button.primary:hover { background: #388bfd; }
+
+        .step-counter {
+            color: #8b949e;
+            font-size: 0.85em;
+            margin-left: auto;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #21262d;
+            border-radius: 2px;
+            margin-top: 12px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #1f6feb;
+            border-radius: 2px;
+            transition: width 0.2s ease;
+        }
+
+        /* MEMORY */
+        .memory-display {
+            font-size: 0.85em;
+            color: #8b949e;
+            min-height: 36px;
+        }
+
+        .memory-changed {
+            color: #ffa657;
+            background: #2d1f0e;
+            border: 1px solid #5a3825;
+            padding: 6px 10px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        /* RIGHT PANEL — REGISTERS */
+        .register-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+        }
+
+        .reg {
+            background: #0d1117;
+            border: 1px solid #21262d;
+            border-radius: 6px;
+            padding: 8px;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .reg-name {
+            color: #8b949e;
+            font-size: 0.7em;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .reg-alias {
+            color: #6e7681;
+            font-size: 0.65em;
+            display: block;
+        }
+
+        .reg-value {
+            color: #c9d1d9;
+            font-size: 0.95em;
+            font-weight: bold;
+            display: block;
+            margin-top: 2px;
+        }
+
+        .reg.changed {
+            background: #1a2a1a;
+            border-color: #3fb950;
+        }
+
+        .reg.changed .reg-value { color: #3fb950; }
+        .reg.zero-reg { opacity: 0.5; }
+
+        /* PROGRAM VIEW */
+        .program-lines { font-size: 0.85em; line-height: 2; }
+
+        .prog-line {
+            padding: 2px 8px;
+            border-radius: 3px;
+            color: #8b949e;
+            display: flex;
+            gap: 12px;
+        }
+
+        .prog-line.active {
+            background: #1f2d3d;
+            color: #79c0ff;
+            border-left: 3px solid #58a6ff;
+        }
+
+        .prog-line.executed { color: #3fb950; }
+        .prog-line .line-num { color: #6e7681; min-width: 24px; }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .main-grid { grid-template-columns: 1fr; }
+            .register-grid { grid-template-columns: repeat(4, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+<h1>⚡ RISC-V Subset Simulator</h1>
+<p class="subtitle">Step-through execution visualizer &nbsp;|&nbsp; Pulse Code Hackathon</p>
+
+<div class="main-grid">
+
+    <!-- LEFT PANEL -->
+    <div class="left-panel">
+
+        <div class="card">
+            <div class="card-title">Current Instruction</div>
+            <div class="instruction-display" id="instr-display">—</div>
+            <div class="pc-display" id="pc-display">PC: —</div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Controls</div>
+            <div class="controls">
+                <button onclick="goFirst()">⏮ First</button>
+                <button onclick="goPrev()" id="btn-prev">◀ Prev</button>
+                <button onclick="goNext()" id="btn-next" class="primary">Next ▶</button>
+                <button onclick="goLast()">Last ⏭</button>
+                <span class="step-counter" id="step-counter">—</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Memory Changes</div>
+            <div class="memory-display" id="mem-display">No memory changes yet.</div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Program</div>
+            <div class="program-lines" id="program-lines"></div>
+        </div>
+
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="card">
+        <div class="card-title">Register File — x0 to x31</div>
+        <div class="register-grid" id="register-grid"></div>
+    </div>
+
+</div>
+
+<script>
+let steps = [];
+
+fetch('output.json')
+    .then(res => {
+        if (!res.ok) throw new Error("Could not load output.json");
+        return res.json();
+    })
+    .then(data => {
+        steps = data;
+        render();
+    })
+    .catch(err => {
+        document.getElementById("instr-display").textContent = 
+            "Error: Run ./risc_v_sim -json first to generate output.json";
+        console.error(err);
+    });
+    
+const regNames = [
+    "zero","ra","sp","gp","tp",
+    "t0","t1","t2","s0","s1",
+    "a0","a1","a2","a3","a4","a5","a6","a7",
+    "s2","s3","s4","s5","s6","s7","s8","s9","s10","s11",
+    "t3","t4","t5","t6"
+];
+
+let current = 0;
+
+function render() {
+    const step = steps[current];
+    const prev = current > 0 ? steps[current - 1] : null;
+
+    // Instruction + PC
+    document.getElementById("instr-display").textContent = "> " + step.instr;
+    document.getElementById("pc-display").textContent = "PC: " + step.pc;
+
+    // Step counter + progress
+    document.getElementById("step-counter").textContent =
+        `Step ${current + 1} of ${steps.length}`;
+    document.getElementById("progress-fill").style.width =
+        `${((current + 1) / steps.length) * 100}%`;
+
+    // Button states
+    document.getElementById("btn-prev").disabled = current === 0;
+    document.getElementById("btn-next").disabled = current === steps.length - 1;
+
+    // Registers
+    const grid = document.getElementById("register-grid");
+    grid.innerHTML = "";
+    step.regs.forEach((val, i) => {
+        const changed = prev && prev.regs[i] !== val;
+        const isZero = i === 0;
+        grid.innerHTML += `
+            <div class="reg ${changed ? "changed" : ""} ${isZero ? "zero-reg" : ""}">
+                <span class="reg-name">x${i}</span>
+                <span class="reg-alias">${regNames[i]}</span>
+                <span class="reg-value">${val}</span>
+            </div>`;
+    });
+
+    // Memory
+    const memDiv = document.getElementById("mem-display");
+    if (step.mem) {
+        memDiv.innerHTML = `
+            <span class="memory-changed">
+                mem[${step.mem.addr}] ← ${step.mem.val}
+                &nbsp;(0x${step.mem.val.toString(16).toUpperCase()})
+            </span>`;
+    } else {
+        memDiv.textContent = "No memory changes this step.";
+    }
+
+    // Program view
+    const progDiv = document.getElementById("program-lines");
+    progDiv.innerHTML = "";
+    steps.forEach((s, idx) => {
+        const isActive  = idx === current;
+        const isDone    = idx < current;
+        progDiv.innerHTML += `
+            <div class="prog-line ${isActive ? "active" : ""} ${isDone ? "executed" : ""}">
+                <span class="line-num">${idx + 1}</span>
+                <span>${s.instr}</span>
+            </div>`;
+    });
+
+    // Scroll active program line into view
+    const lines = progDiv.querySelectorAll(".prog-line");
+    if (lines[current]) {
+        lines[current].scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+}
+
+function goNext()  { if (current < steps.length - 1) { current++; render(); } }
+function goPrev()  { if (current > 0) { current--; render(); } }
+function goFirst() { current = 0; render(); }
+function goLast()  { current = steps.length - 1; render(); }
+
+// Keyboard navigation
+document.addEventListener("keydown", e => {
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") goNext();
+    if (e.key === "ArrowLeft"  || e.key === "ArrowUp")   goPrev();
+    if (e.key === "Home") goFirst();
+    if (e.key === "End")  goLast();
+});
+
+// Init
+render();
+</script>
+
+</body>
+</html>

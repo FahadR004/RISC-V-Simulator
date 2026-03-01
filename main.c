@@ -7,10 +7,17 @@
 
 struct CPU cpu;
 
-int main() {
+int main(int argc, char* argv[]) {
 
     // Initialize CPU. Initialize Registers and Memory with all 0s
     cpu_init(&cpu);
+
+    for (int i = 1; i < argc; i++) {
+        if (!strcmp(argv[i], "-json")) {
+            cpu.json_mode = 1;
+        }
+    }
+
     // Read Asm File
     printf("Reading Assembly Program...\n");
     FILE *fptr;
@@ -49,15 +56,36 @@ int main() {
     }
     printf("Parsing completed. Total instructions: %d\n\n", instr_count);
     printf("Initial PC set to 0x%08x\n", cpu.pc);
+
+    char json_output[1024 * 1024]; // 1MB buffer — enough for any program
+    json_output[0] = '[';
     printf("Starting execution...\n\n");
     int i = 0;
     while (i < instr_count) {
         execute(&cpu, instructions[i]);
-        print_execution_step(instructions[i], &cpu);
+         if (cpu.json_mode) {
+            int is_last = ((int)(cpu.pc - BASE_PC) / 4 >= instr_count);
+            print_json_step(instructions[i], &cpu, json_output, is_last);
+        } else {
+            print_execution_step(instructions[i], &cpu);
+        }
         i = (cpu.pc - BASE_PC)/4; // CPU PC will always be bigger or equal to BASE_PC but never less
     }
 
     printf("Execution completed.\n");
+
+    if (cpu.json_mode) {
+    strcat(json_output, "]\n");
+        
+        FILE *out = fopen("output.json", "w");
+        if (out) {
+            fprintf(out, "%s", json_output);
+            fclose(out);
+            printf("JSON written to output.json\n");
+        } else {
+            perror("Could not write output.json");
+        }
+    }
     for (int i = 0; i < REG_NUM; i++) {
         if (cpu.regs[i] != 0)
             printf("Result: %s (x%d) = %d\n", reg_names[i], i, cpu.regs[i]);
